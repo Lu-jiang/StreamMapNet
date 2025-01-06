@@ -89,14 +89,14 @@ class PerceptionTransformer(BaseModule):
         """
 
         bs = mlvl_feats[0].size(0)
-        bev_queries = bev_queries.unsqueeze(1).repeat(1, bs, 1)
-        bev_pos = bev_pos.flatten(2).permute(2, 0, 1)
+        bev_queries = bev_queries.unsqueeze(1).repeat(1, bs, 1) # torch.Size([5000, bs, 256])
+        bev_pos = bev_pos.flatten(2).permute(2, 0, 1)           # torch.Size([bs, 256, 5000]) -> torch.Size([5000, bs, 256])
 
         shift = bev_queries.new_tensor((0,0))[None].repeat(bs,1)
 
         feat_flatten = []
         spatial_shapes = []
-        for lvl, feat in enumerate(mlvl_feats):
+        for lvl, feat in enumerate(mlvl_feats):     # len=3, torch.Size([6, 256, 60, 100]) torch.Size([6, 256, 30, 50]) torch.Size([6, 256, 15, 25])
             bs, num_cam, c, h, w = feat.shape
             spatial_shape = (h, w)
             feat = feat.flatten(3).permute(1, 0, 3, 2)
@@ -115,7 +115,7 @@ class PerceptionTransformer(BaseModule):
             (1,)), spatial_shapes.prod(1).cumsum(0)[:-1]))
 
         feat_flatten = feat_flatten.permute(
-            0, 2, 1, 3)  # (num_cam, H*W, bs, embed_dims)
+            0, 2, 1, 3)  # (num_cam, H*W, bs, embed_dims)   # torch.Size([6, 7875, 1, 256])
 
         bev_embed = self.encoder(
             bev_queries,
@@ -131,7 +131,7 @@ class PerceptionTransformer(BaseModule):
             **kwargs
         )
 
-        return bev_embed
+        return bev_embed    # torch.Size([bs, 5000, 256])
 
     @auto_fp16(apply_to=('mlvl_feats', 'bev_queries', 'object_query_embed', 'prev_bev', 'bev_pos'))
     def forward(self,

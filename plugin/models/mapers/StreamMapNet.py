@@ -170,14 +170,14 @@ class StreamMapNet(BaseMapper):
         bs = img.shape[0]
 
         # Backbone
-        _bev_feats = self.backbone(img, img_metas=img_metas, points=points)
+        _bev_feats = self.backbone(img, img_metas=img_metas, points=points) # torch.Size([bs, 256, 50, 100])
         
         if self.streaming_bev:
             self.bev_memory.train()
             _bev_feats = self.update_bev_feature(_bev_feats, img_metas)
         
         # Neck
-        bev_feats = self.neck(_bev_feats)
+        bev_feats = self.neck(_bev_feats)   # torch.Size([bs, 256, 50, 100])
 
         preds_list, loss_dict, det_match_idxs, det_match_gt_idxs = self.head(
             bev_features=bev_feats, 

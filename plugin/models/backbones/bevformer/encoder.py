@@ -181,7 +181,7 @@ class BEVFormerEncoder(TransformerLayerSequence):
                 [num_layers, num_query, bs, embed_dims].
         """
 
-        output = bev_query
+        output = bev_query  # torch.Size([5000, bs, 256])
         intermediate = []
 
         ref_3d = self.get_reference_points(

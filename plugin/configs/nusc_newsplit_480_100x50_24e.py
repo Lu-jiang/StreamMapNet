@@ -8,6 +8,7 @@ plugin = True
 
 # plugin code dir
 plugin_dir = 'plugin/'
+data_root = '/home/jianglu/Documents/MapTR/data/nuscenes'
 
 # img configs
 img_norm_cfg = dict(
@@ -17,8 +18,8 @@ img_h = 480
 img_w = 800
 img_size = (img_h, img_w)
 
-num_gpus = 8
-batch_size = 4
+num_gpus = 1
+batch_size = 1
 num_iters_per_epoch = 27846 // (num_gpus * batch_size)
 num_epochs = 24
 num_epochs_single_frame = num_epochs // 6
@@ -58,7 +59,8 @@ meta = dict(
 bev_embed_dims = 256
 embed_dims = 512
 num_feat_levels = 3
-norm_cfg = dict(type='BN2d')
+# norm_cfg = dict(type='BN2d')
+norm_cfg = dict(type='BN')
 num_class = max(list(cat2id.values()))+1
 num_points = 20
 permute = True
@@ -280,8 +282,10 @@ test_pipeline = [
 # DO NOT CHANGE
 eval_config = dict(
     type='NuscDataset',
-    data_root='./datasets/nuScenes',
-    ann_file='./datasets/nuScenes/nuscenes_map_infos_val_newsplit.pkl',
+    # data_root='./datasets/nuScenes',
+    data_root=data_root,
+    # ann_file='./datasets/nuScenes/nuscenes_map_infos_val_newsplit.pkl',
+    ann_file=data_root + '/nuscenes_infos_temporal_val.pkl',
     meta=meta,
     roi_size=roi_size,
     cat2id=cat2id,
@@ -302,11 +306,11 @@ eval_config = dict(
 # dataset configs
 data = dict(
     samples_per_gpu=batch_size,
-    workers_per_gpu=4,
+    workers_per_gpu=1,
     train=dict(
         type='NuscDataset',
-        data_root='./datasets/nuScenes',
-        ann_file='./datasets/nuScenes/nuscenes_map_infos_train_newsplit.pkl',
+        data_root='/home/jianglu/Documents/MapTR/data/nuscenes',
+        ann_file='/home/jianglu/Documents/MapTR/data/nuscenes/nuscenes_map_infos_train_newsplit.pkl',
         meta=meta,
         roi_size=roi_size,
         cat2id=cat2id,
@@ -315,8 +319,10 @@ data = dict(
     ),
     val=dict(
         type='NuscDataset',
-        data_root='./datasets/nuScenes',
-        ann_file='./datasets/nuScenes/nuscenes_map_infos_val_newsplit.pkl',
+        # data_root='./datasets/nuScenes',
+        # ann_file='./datasets/nuScenes/nuscenes_map_infos_val_newsplit.pkl',
+        data_root=data_root,
+        ann_file=data_root + '/nuscenes_infos_temporal_val.pkl',
         meta=meta,
         roi_size=roi_size,
         cat2id=cat2id,
@@ -327,8 +333,10 @@ data = dict(
     ),
     test=dict(
         type='NuscDataset',
-        data_root='./datasets/nuScenes',
-        ann_file='./datasets/nuScenes/nuscenes_map_infos_val_newsplit.pkl',
+        # data_root='./datasets/nuScenes',
+        # ann_file='./datasets/nuScenes/nuscenes_map_infos_val_newsplit.pkl',
+        data_root=data_root,
+        ann_file=data_root + '/nuscenes_infos_temporal_val.pkl',
         meta=meta,
         roi_size=roi_size,
         cat2id=cat2id,
@@ -379,4 +387,4 @@ log_config = dict(
         dict(type='TensorboardLoggerHook')
     ])
 
-SyncBN = True
+# SyncBN = True

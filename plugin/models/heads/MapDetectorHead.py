@@ -318,8 +318,8 @@ class MapDetectorHead(nn.Module):
         # pos_embed = self.positional_encoding(img_masks)
         pos_embed = None
 
-        query_embedding = self.query_embedding.weight[None, ...].repeat(bs, 1, 1) # [B, num_q, embed_dims]
-        input_query_num = self.num_queries
+        query_embedding = self.query_embedding.weight[None, ...].repeat(bs, 1, 1) # [B, num_q, embed_dims] torch.Size([bs, 100, 512])
+        input_query_num = self.num_queries  # 100
         # num query: self.num_query + self.topk
         if self.streaming_query:
             query_embedding, prop_query_embedding, init_reference_points, prop_ref_pts, memory_query, is_first_frame_list, trans_loss = \
@@ -332,8 +332,8 @@ class MapDetectorHead(nn.Module):
             prop_ref_pts = None
             is_first_frame_list = [True for i in range(bs)]
         
-        assert list(init_reference_points.shape) == [bs, self.num_queries, self.num_points, 2]
-        assert list(query_embedding.shape) == [bs, self.num_queries, self.embed_dims]
+        assert list(init_reference_points.shape) == [bs, self.num_queries, self.num_points, 2]  # torch.Size([bs, 100, 20, 2])
+        assert list(query_embedding.shape) == [bs, self.num_queries, self.embed_dims]           # torch.Size([bs, 100, 512])
 
         # outs_dec: (num_layers, num_qs, bs, embed_dims)
         inter_queries, init_reference, inter_references = self.transformer(
@@ -350,7 +350,7 @@ class MapDetectorHead(nn.Module):
             predict_refine=self.predict_refine,
             is_first_frame_list=is_first_frame_list,
             query_key_padding_mask=query_embedding.new_zeros((bs, self.num_queries), dtype=torch.bool), # mask used in self-attn,
-        )
+        )   # out: len=6, inter_queries: torch.Size([bs, 100, 512]), inter_references: torch.Size([bs, 100, 20, 2])
         outputs = []
         for i, (queries) in enumerate(inter_queries):
             reg_points = inter_references[i] # (bs, num_q, num_points, 2)
@@ -363,15 +363,15 @@ class MapDetectorHead(nn.Module):
             scores_list = []
             for i in range(len(scores)):
                 # padding queries should not be output
-                reg_points_list.append(reg_points[i])
-                scores_list.append(scores[i])
+                reg_points_list.append(reg_points[i])   # torch.Size([100, 40])
+                scores_list.append(scores[i])           # torch.Size([100, 3])
 
             pred_dict = {
                 'lines': reg_points_list,
                 'scores': scores_list
             }
             outputs.append(pred_dict)
-        
+        # len(outputs) = 6;
         loss_dict, det_match_idxs, det_match_gt_idxs, gt_lines_list = self.loss(gts=gts, preds=outputs)
         if self.streaming_query:
             query_list = []
@@ -621,8 +621,8 @@ class MapDetectorHead(nn.Module):
             'Only supports for gt_bboxes_ignore setting to None.'
 
         # format the inputs
-        gt_labels = gts['labels']
-        gt_lines = gts['lines']
+        gt_labels = gts['labels']   # such as, torch.Size([9]), tensor([1, 1, 1, 1, 2, 2, 2, 2, 2], device='cuda:0')
+        gt_lines = gts['lines']     # such as, torch.Size([9, 38, 40])
 
         lines_pred = preds['lines']
 

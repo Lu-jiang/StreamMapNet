@@ -89,7 +89,7 @@ class MapTransformerDecoder_new(BaseModule):
                 return_intermediate is `False`, otherwise it has shape
                 [num_layers, num_query, bs, embed_dims].
         """
-        num_queries, bs, embed_dims = query.shape
+        num_queries, bs, embed_dims = query.shape   # torch.Size([100, bs, 512])
         output = query
         intermediate = []
         intermediate_reference_points = []
@@ -114,7 +114,7 @@ class MapTransformerDecoder_new(BaseModule):
                 reference_points = torch.stack(new_refpts)
                 assert list(output.shape) == [num_queries, bs, embed_dims]
 
-            tmp = reference_points.clone()
+            tmp = reference_points.clone()  # torch.Size([bs, 100, 20, 2])
             tmp[..., 1:2] = 1.0 - reference_points[..., 1:2] # reverse y-axis
             # reference_points = tmp
             
@@ -129,10 +129,10 @@ class MapTransformerDecoder_new(BaseModule):
                 level_start_index=level_start_index,
                 query_key_padding_mask=None,
                 **kwargs)
-            
+            # output: torch.Size([100, bs, 512])
             reg_points = reg_branches[lid](output.permute(1, 0, 2)) # (bs, num_q, 2*num_points)
-            bs, num_queries, num_points2 = reg_points.shape
-            reg_points = reg_points.view(bs, num_queries, num_points2//2, 2) # range (0, 1)
+            bs, num_queries, num_points2 = reg_points.shape         # torch.Size([bs, 100, 40])
+            reg_points = reg_points.view(bs, num_queries, num_points2//2, 2) # range (0, 1) torch.Size([bs, 100, 20, 2])
             
             if predict_refine:
                 new_reference_points = reg_points + inverse_sigmoid(
@@ -279,7 +279,7 @@ class MapTransformerLayer(BaseTransformerLayer):
         for layer in self.operation_order:
             if layer == 'self_attn':
                 if memory_query is None:
-                    temp_key = temp_value = query
+                    temp_key = temp_value = query   # torch.Size([100, bs, 512])
                 else:
                     temp_key = temp_value = torch.cat([memory_query, query], dim=0)
                 
@@ -377,7 +377,7 @@ class MapTransformer(Transformer):
         Args:
             mlvl_feats (list(Tensor)): Input queries from
                 different level. Each element has shape
-                [bs, embed_dims, h, w].
+                [bs, embed_dims, h, w]. torch.Size([bs, 512, 50, 100])
             mlvl_masks (list(Tensor)): The key_padding_mask from
                 different level used for encoder and decoder,
                 each element has shape  [bs, h, w].
@@ -389,7 +389,7 @@ class MapTransformer(Transformer):
             reg_branches (obj:`nn.ModuleList`): Regression heads for
                 feature maps from each decoder layer. Only would
                 be passed when
-                `with_box_refine` is True. Default to None.
+                `with_box_refine` is True. Default to None. 512->40
             cls_branches (obj:`nn.ModuleList`): Classification heads
                 for feature maps from each decoder layer. Only would
                  be passed when `as_two_stage`
@@ -424,18 +424,18 @@ class MapTransformer(Transformer):
         spatial_shapes = []
         for lvl, (feat, mask, pos_embed) in enumerate(
                 zip(mlvl_feats, mlvl_masks, mlvl_pos_embeds)):
-            bs, c, h, w = feat.shape
+            bs, c, h, w = feat.shape    # bs, 512, 50, 100
             spatial_shape = (h, w)
             spatial_shapes.append(spatial_shape)
-            feat = feat.flatten(2).transpose(1, 2)
+            feat = feat.flatten(2).transpose(1, 2)  # torch.Size([bs, 5000, 512])
             mask = mask.flatten(1)
             # pos_embed = pos_embed.flatten(2).transpose(1, 2)
             # lvl_pos_embed = pos_embed + self.level_embeds[lvl].view(1, 1, -1)
             # lvl_pos_embed_flatten.append(lvl_pos_embed)
             feat_flatten.append(feat)
             mask_flatten.append(mask)
-        feat_flatten = torch.cat(feat_flatten, 1)
-        mask_flatten = torch.cat(mask_flatten, 1)
+        feat_flatten = torch.cat(feat_flatten, 1)   # torch.Size([bs, 5000, 512])
+        mask_flatten = torch.cat(mask_flatten, 1)   # torch.Size([bs, 5000])
         # lvl_pos_embed_flatten = torch.cat(lvl_pos_embed_flatten, 1)
         spatial_shapes = torch.as_tensor(
             spatial_shapes, dtype=torch.long, device=feat_flatten.device)

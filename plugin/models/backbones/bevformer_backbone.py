@@ -135,13 +135,13 @@ class BEVFormerBackbone(nn.Module):
             if self.use_grid_mask:
                 img = self.grid_mask(img)
 
-            img_feats = self.img_backbone(img)
+            img_feats = self.img_backbone(img)  # len=3, torch.Size([6, 512, 60, 100]) torch.Size([6, 1024, 30, 50]) torch.Size([6, 2048, 15, 25])
             if isinstance(img_feats, dict):
                 img_feats = list(img_feats.values())
         else:
             return None
         if self.with_img_neck:
-            img_feats = self.img_neck(img_feats)
+            img_feats = self.img_neck(img_feats)    # len=3, torch.Size([6, 256, 60, 100]) torch.Size([6, 256, 30, 50]) torch.Size([6, 256, 15, 25])
 
         img_feats_reshaped = []
         for img_feat in img_feats:
@@ -170,14 +170,14 @@ class BEVFormerBackbone(nn.Module):
                 Shape [nb_dec, bs, num_query, 9].
         """
 
-        mlvl_feats = self.extract_img_feat(img=img, img_metas=img_metas)
+        mlvl_feats = self.extract_img_feat(img=img, img_metas=img_metas)    # len=3, torch.Size([B, 6, 256, 60, 100]) torch.Size([B, 6, 256, 30, 50]) torch.Size([B, 6, 256, 15, 25])
 
         bs, num_cam, _, _, _ = mlvl_feats[0].shape
         dtype = mlvl_feats[0].dtype
-        bev_queries = self.bev_embedding.weight.to(dtype)
+        bev_queries = self.bev_embedding.weight.to(dtype)   # torch.Size([5000, 256]), for 100 * 50
 
         bev_mask = torch.zeros((bs, self.bev_h, self.bev_w),
-                            device=bev_queries.device).to(dtype)
+                            device=bev_queries.device).to(dtype)    # torch.Size([B, 50, 100])
         bev_pos = self.positional_encoding(bev_mask).to(dtype)
 
         outs =  self.transformer.get_bev_features(
@@ -191,8 +191,8 @@ class BEVFormerBackbone(nn.Module):
                 img_metas=img_metas,
                 prev_bev=prev_bev,
             )
-        
-        outs = outs.unflatten(1,(self.bev_h,self.bev_w)).permute(0,3,1,2).contiguous()
+        # outs: torch.Size([bs, 5000, 256])
+        outs = outs.unflatten(1,(self.bev_h,self.bev_w)).permute(0,3,1,2).contiguous()  # torch.Size([bs, 256, 50, 100])
         
         if self.upsample:
             outs = self.up(outs)
